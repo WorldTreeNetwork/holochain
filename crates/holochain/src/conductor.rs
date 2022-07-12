@@ -15,6 +15,8 @@
 
 pub mod api;
 mod cell;
+#[cfg(feature = "chc")]
+pub mod chc;
 #[allow(clippy::module_inception)]
 #[allow(missing_docs)]
 pub mod conductor;
@@ -34,8 +36,6 @@ pub mod paths;
 pub mod ribosome_store;
 pub mod space;
 pub mod state;
-#[cfg(feature = "ccc")]
-pub mod ccc;
 
 pub use cell::error::CellError;
 pub use cell::Cell;

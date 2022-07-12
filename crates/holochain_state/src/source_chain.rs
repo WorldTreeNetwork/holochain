@@ -311,11 +311,11 @@ impl SourceChain {
                     return Ok(Vec::new());
                 }
                 cfg_if::cfg_if! {
-                    if #[cfg(feature = "ccc")] {
-                        let ccc_head = network.ccc_sync(actions.clone()).await?;
-                        if ccc_head != latest_head {
-                            todo!("lock the chain and trigger a chain restore from CCC");
-                            return Err(SourceChainError::CCCHeadMoved(
+                    if #[cfg(feature = "chc")] {
+                        let chc_head = network.chc_sync(actions.clone()).await?;
+                        if chc_head != latest_head {
+                            todo!("lock the chain and trigger a chain restore from CHC");
+                            return Err(SourceChainError::ChcHeadMoved(
                                 actions,
                                 entries,
                                 Some(persisted_head),

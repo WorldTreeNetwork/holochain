@@ -28,9 +28,9 @@ pub enum SourceChainError {
     ),
 
     #[error(
-        "Attempted to commit a bundle to the source chain, but the CCC's head has moved since the bundle began. Bundle head: {2:?}, Current head: {3:?}"
+        "Attempted to commit a bundle to the source chain, but the CHC's head has moved since the bundle began. Bundle head: {2:?}, Current head: {3:?}"
     )]
-    CCCHeadMoved(
+    ChcHeadMoved(
         Vec<SignedActionHashed>,
         Vec<EntryHashed>,
         Option<ActionHash>,

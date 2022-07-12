@@ -1,5 +1,7 @@
 #![allow(missing_docs)]
 
+use std::sync::Arc;
+
 use parking_lot::Mutex;
 
 use holo_hash::ActionHash;
@@ -8,28 +10,28 @@ use holochain_zome_types::ActionHashed;
 use crate::core::workflow::error::WorkflowResult;
 
 /// Check sync
-pub async fn ccc_sync() -> WorkflowResult<()> {
+pub async fn chc_sync() -> WorkflowResult<()> {
     todo!()
 }
 
 pub type Transactions<A> = Vec<Vec<A>>;
 
 #[derive(Debug, PartialEq, Eq, derive_more::Constructor)]
-pub struct CCCSyncData<A> {
+pub struct CHCSyncData<A> {
     latest_txn_id: TxnId,
     transactions: Transactions<A>,
 }
 
 pub type TxnId = usize;
 
-pub trait CCCItem: Clone + PartialEq + Eq + std::fmt::Debug {
+pub trait ChcItem: Clone + PartialEq + Eq + std::fmt::Debug {
     type Hash: PartialEq + Eq;
 
     fn prev_hash(&self) -> Option<&Self::Hash>;
     fn as_hash(&self) -> &Self::Hash;
 }
 
-impl CCCItem for ActionHashed {
+impl ChcItem for ActionHashed {
     type Hash = ActionHash;
 
     fn prev_hash(&self) -> Option<&ActionHash> {
@@ -41,52 +43,52 @@ impl CCCItem for ActionHashed {
     }
 }
 
-trait CCC {
-    // type Hash: PartialEq + Eq + std::fmt::Debug;
-    type Item: CCCItem;
+trait ChainHeadCoordinator {
+    type Item: ChcItem;
 
     fn next_transaction_id(&self) -> TxnId;
 
-    fn add_transaction(&self, txn_id: TxnId, actions: Vec<Self::Item>) -> Result<(), CCCError>;
+    fn add_transaction(&self, txn_id: TxnId, actions: Vec<Self::Item>) -> Result<(), ChcError>;
 
     fn get_transactions_since_id(&self, txn_id: TxnId) -> Transactions<Self::Item>;
 }
 
-/// A local Rust implementation of a CCC, for testing purposes only.
-pub struct LocalCCC<A: CCCItem> {
-    transactions: Mutex<Transactions<A>>,
+/// A local Rust implementation of a CHC, for testing purposes only.
+#[derive(Clone)]
+pub struct LocalChc<A: ChcItem = ActionHashed> {
+    transactions: Arc<Mutex<Transactions<A>>>,
 }
 
-impl<A: CCCItem> Default for LocalCCC<A> {
+impl<A: ChcItem> Default for LocalChc<A> {
     fn default() -> Self {
         Self {
-            transactions: Mutex::new(Default::default()),
+            transactions: Arc::new(Mutex::new(Default::default())),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CCCError {
+pub enum ChcError {
     WrongTransactionId,
     HashMismatch,
 }
 
-impl<A: CCCItem> CCC for LocalCCC<A> {
+impl<A: ChcItem> ChainHeadCoordinator for LocalChc<A> {
     type Item = A;
 
     fn next_transaction_id(&self) -> TxnId {
         self.transactions.lock().len().into()
     }
 
-    fn add_transaction(&self, txn_id: TxnId, actions: Vec<A>) -> Result<(), CCCError> {
+    fn add_transaction(&self, txn_id: TxnId, actions: Vec<A>) -> Result<(), ChcError> {
         let mut txns = self.transactions.lock();
         if txns.len() != txn_id {
-            return Err(CCCError::WrongTransactionId);
+            return Err(ChcError::WrongTransactionId);
         }
         let last = txns.last().and_then(|t| t.last());
         if let (Some(last), Some(next)) = (last, actions.first()) {
             if next.prev_hash() != Some(last.as_hash()) {
-                return Err(CCCError::HashMismatch);
+                return Err(ChcError::HashMismatch);
             }
         }
         (*txns).push(actions);
@@ -98,7 +100,7 @@ impl<A: CCCItem> CCC for LocalCCC<A> {
     }
 }
 
-impl<A: CCCItem> LocalCCC<A> {}
+impl<A: ChcItem> LocalChc<A> {}
 
 #[cfg(test)]
 mod tests {
@@ -119,7 +121,7 @@ mod tests {
         }
     }
 
-    impl CCCItem for TestItem {
+    impl ChcItem for TestItem {
         type Hash = u32;
 
         fn prev_hash(&self) -> Option<&u32> {
@@ -133,45 +135,45 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_add_transaction() {
-        let ccc = LocalCCC::default();
-        assert_eq!(ccc.next_transaction_id(), 0);
+        let chc = LocalChc::default();
+        assert_eq!(chc.next_transaction_id(), 0);
 
         let t0: Vec<TestItem> = vec![1.into(), 2.into(), 3.into()];
         let t1: Vec<TestItem> = vec![4.into(), 5.into(), 6.into()];
         let t2: Vec<TestItem> = vec![7.into(), 8.into(), 9.into()];
         let t99: Vec<TestItem> = vec![99.into()];
 
-        ccc.add_transaction(0, t0.clone()).unwrap();
-        assert_eq!(ccc.next_transaction_id(), 1);
-        ccc.add_transaction(1, t1.clone()).unwrap();
-        assert_eq!(ccc.next_transaction_id(), 2);
+        chc.add_transaction(0, t0.clone()).unwrap();
+        assert_eq!(chc.next_transaction_id(), 1);
+        chc.add_transaction(1, t1.clone()).unwrap();
+        assert_eq!(chc.next_transaction_id(), 2);
 
         // transaction id isn't correct
         assert_eq!(
-            ccc.add_transaction(0, t2.clone()),
-            Err(CCCError::WrongTransactionId)
+            chc.add_transaction(0, t2.clone()),
+            Err(ChcError::WrongTransactionId)
         );
         assert_eq!(
-            ccc.add_transaction(1, t2.clone()),
-            Err(CCCError::WrongTransactionId)
+            chc.add_transaction(1, t2.clone()),
+            Err(ChcError::WrongTransactionId)
         );
         assert_eq!(
-            ccc.add_transaction(3, t2.clone()),
-            Err(CCCError::WrongTransactionId)
+            chc.add_transaction(3, t2.clone()),
+            Err(ChcError::WrongTransactionId)
         );
         // last_hash doesn't match
-        assert_eq!(ccc.add_transaction(2, t99), Err(CCCError::HashMismatch));
+        assert_eq!(chc.add_transaction(2, t99), Err(ChcError::HashMismatch));
 
-        ccc.add_transaction(2, t2.clone()).unwrap();
+        chc.add_transaction(2, t2.clone()).unwrap();
 
         assert_eq!(
-            ccc.get_transactions_since_id(0),
+            chc.get_transactions_since_id(0),
             vec![t0.clone(), t1.clone(), t2.clone()]
         );
         assert_eq!(
-            ccc.get_transactions_since_id(1),
+            chc.get_transactions_since_id(1),
             vec![t1.clone(), t2.clone()]
         );
-        assert_eq!(ccc.get_transactions_since_id(2), vec![t2.clone()]);
+        assert_eq!(chc.get_transactions_since_id(2), vec![t2.clone()]);
     }
 }

@@ -48,8 +48,8 @@ pub struct ConductorConfig {
 
     /// Optional URL for Centralized Chain Coordination service
     // TODO: may need to specify one per Cell
-    #[cfg(feature = "ccc")]
-    pub ccc_url: Option<url2::Url2>,
+    #[cfg(feature = "chc")]
+    pub chc_url: Option<url2::Url2>,
 
     /// Override the default database synchronous strategy.
     ///

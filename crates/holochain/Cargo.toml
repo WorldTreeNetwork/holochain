@@ -171,4 +171,4 @@ no-deps = ['holochain_sqlite/no-deps']
 wasmer_debug_memory = ["holochain_wasmer_host/debug_memory"]
 
 # Enable centralized chain coordination
-ccc = []
+chc = []

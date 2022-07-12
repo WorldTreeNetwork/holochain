@@ -134,8 +134,8 @@ pub trait HolochainP2pDnaT {
     /// New data has been integrated and is ready for gossiping.
     async fn new_integrated_data(&self) -> actor::HolochainP2pResult<()>;
 
-    /// Attempt to update the CCC's head
-    async fn ccc_sync(
+    /// Attempt to update the CHC's head
+    async fn chc_sync(
         &self,
         actions: Vec<SignedHashed<Action>>,
     ) -> actor::HolochainP2pResult<Option<ActionHash>> {
