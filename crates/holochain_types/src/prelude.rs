@@ -35,5 +35,7 @@ pub use crate::fixt::TimestampFixturator;
 pub use crate::fixt::*;
 #[cfg(feature = "test_utils")]
 pub use crate::test_utils::*;
+#[cfg(feature = "chc")]
+pub use crate::chc::*;
 
 pub use holochain_util::{ffs, tokio_helper};

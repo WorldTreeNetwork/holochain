@@ -160,6 +160,7 @@ fixturator!(
             let holochain_p2p = crate::test::stub_network().await;
             holochain_p2p.to_dna(
                 DnaHashFixturator::new(Empty).next().unwrap(),
+                None
             )
         })
     };

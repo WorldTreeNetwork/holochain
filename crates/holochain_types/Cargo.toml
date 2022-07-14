@@ -80,3 +80,4 @@ test_utils = [
   "mr_bundle/arbitrary",
   "holochain_zome_types/test_utils",
 ]
+chc = []

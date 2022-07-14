@@ -137,10 +137,8 @@ pub trait HolochainP2pDnaT {
     /// Attempt to update the CHC's head
     async fn chc_sync(
         &self,
-        actions: Vec<SignedHashed<Action>>,
-    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
-        todo!()
-    }
+        actions: Vec<SignedActionHashed>,
+    ) -> actor::HolochainP2pResult<Option<ActionHash>>;
 }
 
 /// A wrapper around HolochainP2pSender that partially applies the dna_hash / agent_pub_key.
@@ -149,7 +147,11 @@ pub trait HolochainP2pDnaT {
 pub struct HolochainP2pDna {
     sender: ghost_actor::GhostSender<actor::HolochainP2p>,
     dna_hash: Arc<DnaHash>,
+    chc: Option<ChcImpl>
 }
+
+/// A CHC implementation
+pub type ChcImpl = Arc<parking_lot::Mutex<dyn Send + Sync + ChainHeadCoordinator<Item = SignedActionHashed>>>;
 
 #[async_trait::async_trait]
 impl HolochainP2pDnaT for HolochainP2pDna {
@@ -340,6 +342,21 @@ impl HolochainP2pDnaT for HolochainP2pDna {
         self.sender
             .new_integrated_data((*self.dna_hash).clone())
             .await
+    }
+
+    async fn chc_sync(
+        &self,
+        actions: Vec<SignedActionHashed>,
+    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
+        if let Some(mutex) = &self.chc {
+            let mut chc = mutex.lock();
+            chc.add_actions(actions)?;
+            Ok(chc.head())
+        } else {
+            // XXX: may lead to weirdness if a CHC was expected but none
+            //      is present.
+            Ok(None)
+        }
     }
 }
 

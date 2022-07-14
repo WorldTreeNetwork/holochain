@@ -1,50 +1,20 @@
-#![allow(missing_docs)]
+//! Types for Chain Head Coordination
 
-use std::sync::Arc;
+use holochain_types::prelude::*;
 
-use holochain_types::chain::ChainItem;
-use parking_lot::Mutex;
-use holo_hash::ActionHash;
-use holochain_zome_types::ActionHashed;
-
-use crate::core::{workflow::error::WorkflowResult, validate_chain, SysValidationError};
-
-/// Check sync
-pub async fn chc_sync() -> WorkflowResult<()> {
-    todo!()
-}
-
-
-pub type TxnId = usize;
-
-trait ChainHeadCoordinator {
-    type Item: ChainItem;
-
-    fn head(&self) -> Option<<Self::Item as ChainItem>::Hash>;
-
-    fn add_actions(&self, actions: Vec<Self::Item>) -> Result<(), ChcError>;
-
-    fn get_actions_since_hash(&self, hash: <Self::Item as ChainItem>::Hash) -> Vec<Self::Item>;
-}
+use crate::core::{validate_chain};
 
 /// A local Rust implementation of a CHC, for testing purposes only.
-#[derive(Clone)]
-pub struct LocalChc<A: ChainItem = ActionHashed> {
-    actions: Arc<Mutex<Vec<A>>>,
+pub struct LocalChc<A: ChainItem = SignedActionHashed> {
+    actions: Vec<A>,
 }
 
 impl<A: ChainItem> Default for LocalChc<A> {
     fn default() -> Self {
         Self {
-            actions: Arc::new(Mutex::new(Default::default())),
+            actions: Default::default(),
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ChcError {
-    #[error(transparent)]
-    InvalidChain(#[from] SysValidationError),
 }
 
 impl<A: ChainItem> LocalChc<A> {
@@ -58,19 +28,18 @@ impl<A: ChainItem> ChainHeadCoordinator for LocalChc<A> {
     type Item = A;
 
     fn head(&self) -> Option<A::Hash> {
-        Self::get_head(&self.actions.lock())
+        Self::get_head(&self.actions)
     }
 
-    fn add_actions(&self, new_actions: Vec<A>) -> Result<(), ChcError> {
-        let mut actions = self.actions.lock();
-        let head = actions.last().map(|a| (a.item_hash().clone(), a.seq()));
-        validate_chain(new_actions.iter(), &head)?;
-        (*actions).extend(new_actions);
+    fn add_actions(&mut self, new_actions: Vec<A>) -> Result<(), ChcError> {
+        let head = self.actions.last().map(|a| (a.item_hash().clone(), a.seq()));
+        validate_chain(new_actions.iter(), &head).map_err(|e| ChcError::InvalidChain(e.to_string()))?;
+        self.actions.extend(new_actions);
         Ok(())
     }
 
     fn get_actions_since_hash(&self, hash: A::Hash) -> Vec<A> {
-        self.actions.lock().iter().skip_while(|a| a.item_hash() != &hash).cloned().collect()
+        self.actions.iter().skip_while(|a| a.item_hash() != &hash).cloned().collect()
     }
 }
 
@@ -113,7 +82,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_add_actions() {
-        let chc = LocalChc::default();
+        let mut chc = LocalChc::default();
         assert_eq!(chc.head(), None);
 
         fn items(i: impl IntoIterator<Item = u32>) -> Vec<TestItem> {

@@ -29,6 +29,10 @@ pub enum HolochainP2pError {
     /// Other
     #[error("Other: {0}")]
     Other(Box<dyn std::error::Error + Send + Sync>),
+
+    /// Chain Head Coordination error
+    #[error(transparent)]
+    ChcError(#[from] ChcError)
 }
 
 impl HolochainP2pError {
@@ -109,6 +113,7 @@ pub mod mock_network;
 
 pub(crate) mod wire;
 
+use holochain_types::chc::ChcError;
 pub use wire::WireDhtOpData;
 pub use wire::WireMessage;
 

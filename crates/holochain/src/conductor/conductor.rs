@@ -638,7 +638,8 @@ impl Conductor {
             let managed_task_stop_broadcaster = managed_task_stop_broadcaster.clone();
             async move {
                 use holochain_p2p::actor::HolochainP2pRefToDna;
-                let holochain_p2p_cell = self.holochain_p2p.to_dna(cell_id.dna_hash().clone());
+                let chc = todo!("init chc");
+                let holochain_p2p_cell = self.holochain_p2p.to_dna(cell_id.dna_hash().clone(), chc);
 
                 let space = self
                     .get_or_create_space(cell_id.dna_hash())

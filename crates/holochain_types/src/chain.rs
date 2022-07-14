@@ -1,10 +1,8 @@
 //! Types related to an agents for chain activity
 use crate::activity::AgentActivityResponse;
 use crate::activity::ChainItems;
-use holo_hash::ActionHash;
-use holo_hash::AgentPubKey;
-use holochain_zome_types::ActionHashed;
-use holochain_zome_types::prelude::ChainStatus;
+use holo_hash::*;
+use holochain_zome_types::prelude::*;
 
 /// Helpers for constructing AgentActivity
 pub trait AgentActivityExt {
@@ -24,7 +22,7 @@ pub trait AgentActivityExt {
 impl AgentActivityExt for AgentActivityResponse {}
 
 /// Abstraction of a source chain item, exposing only the parts that the chain cares about.
-/// The main implementation of this is `ActionHashed`
+/// The main implementation of this is `SignedActionHashed`
 pub trait ChainItem: Clone + PartialEq + Eq + std::fmt::Debug {
     /// The hash associated with this item
     type Hash: Clone + PartialEq + Eq;
@@ -46,10 +44,26 @@ impl ChainItem for ActionHashed {
     }
 
     fn item_hash(&self) -> &ActionHash {
-        <ActionHashed as holo_hash::HasHash<_>>::as_hash(self)
+        self.as_hash()
     }
 
     fn seq(&self) -> u32 {
         self.action_seq()
+    }
+}
+
+impl ChainItem for SignedActionHashed {
+    type Hash = ActionHash;
+
+    fn prev_hash(&self) -> Option<&ActionHash> {
+        self.hashed.prev_action()
+    }
+
+    fn item_hash(&self) -> &ActionHash {
+        self.as_hash()
+    }
+
+    fn seq(&self) -> u32 {
+        self.hashed.action_seq()
     }
 }

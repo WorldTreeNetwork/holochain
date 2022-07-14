@@ -246,6 +246,13 @@ impl HolochainP2pDnaT for PassThroughNetwork {
     ) -> actor::HolochainP2pResult<holochain_serialized_bytes::SerializedBytes> {
         todo!()
     }
+
+    async fn chc_sync(
+        &self,
+        _actions: Vec<SignedActionHashed>,
+    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
+        unimplemented!()
+    }
 }
 
 pub fn fill_db<Db: DbKindT + DbKindOp>(env: &DbWrite<Db>, op: DhtOpHashed) {
@@ -423,6 +430,13 @@ impl HolochainP2pDnaT for MockNetwork {
         _payload: holochain_zome_types::ExternIO,
     ) -> actor::HolochainP2pResult<holochain_serialized_bytes::SerializedBytes> {
         todo!()
+    }
+
+    async fn chc_sync(
+        &self,
+        _actions: Vec<SignedActionHashed>,
+    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
+        unimplemented!()
     }
 }
 

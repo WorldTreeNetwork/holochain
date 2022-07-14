@@ -1308,11 +1308,12 @@ impl ConductorHandleT for ConductorHandleImpl {
             .await
             .ok()
             .map(|c| (c.0, c.1));
-
+        
+            let chc = todo!("init chc");
         let network = self
             .conductor
             .holochain_p2p()
-            .to_dna(cell_id.dna_hash().clone());
+            .to_dna(cell_id.dna_hash().clone(), chc);
 
         // Validate the records.
         if validate {
