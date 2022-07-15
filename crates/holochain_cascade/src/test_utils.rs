@@ -7,6 +7,7 @@ use holo_hash::AgentPubKey;
 use holo_hash::AnyDhtHash;
 use holo_hash::EntryHash;
 use holo_hash::HasHash;
+use holochain_p2p::ChcImpl;
 use holochain_p2p::actor;
 use holochain_p2p::dht_arc::DhtArc;
 use holochain_p2p::event::CountersigningSessionNegotiationMessage;
@@ -247,10 +248,9 @@ impl HolochainP2pDnaT for PassThroughNetwork {
         todo!()
     }
 
-    async fn chc_sync(
+    fn chc(
         &self,
-        _actions: Vec<SignedActionHashed>,
-    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
+    ) -> Option<ChcImpl> {
         unimplemented!()
     }
 }
@@ -432,10 +432,7 @@ impl HolochainP2pDnaT for MockNetwork {
         todo!()
     }
 
-    async fn chc_sync(
-        &self,
-        _actions: Vec<SignedActionHashed>,
-    ) -> actor::HolochainP2pResult<Option<ActionHash>> {
+    fn chc(&self) -> Option<ChcImpl> {
         unimplemented!()
     }
 }

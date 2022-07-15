@@ -1,5 +1,7 @@
 //! Types for Chain Head Coordination
 
+mod chc_remote;
+
 use holochain_types::prelude::*;
 
 use crate::core::{validate_chain};
@@ -23,23 +25,23 @@ impl<A: ChainItem> LocalChc<A> {
     }
 }
 
-
+#[async_trait::async_trait]
 impl<A: ChainItem> ChainHeadCoordinator for LocalChc<A> {
     type Item = A;
 
-    fn head(&self) -> Option<A::Hash> {
-        Self::get_head(&self.actions)
+    async fn head(&self) -> ChcResult<Option<A::Hash>> {
+        Ok(Self::get_head(&self.actions))
     }
 
-    fn add_actions(&mut self, new_actions: Vec<A>) -> Result<(), ChcError> {
+    async fn add_actions(&mut self, new_actions: Vec<A>) -> ChcResult<()> {
         let head = self.actions.last().map(|a| (a.item_hash().clone(), a.seq()));
         validate_chain(new_actions.iter(), &head).map_err(|e| ChcError::InvalidChain(e.to_string()))?;
         self.actions.extend(new_actions);
         Ok(())
     }
 
-    fn get_actions_since_hash(&self, hash: A::Hash) -> Vec<A> {
-        self.actions.iter().skip_while(|a| a.item_hash() != &hash).cloned().collect()
+    async fn get_actions_since_hash(&self, hash: A::Hash) -> ChcResult<Vec<A>> {
+        Ok(self.actions.iter().skip_while(|a| a.item_hash() != &hash).cloned().collect())
     }
 }
 
@@ -83,7 +85,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_add_actions() {
         let mut chc = LocalChc::default();
-        assert_eq!(chc.head(), None);
+        assert_eq!(chc.head().await.unwrap(), None);
 
         fn items(i: impl IntoIterator<Item = u32>) -> Vec<TestItem> {
             i.into_iter().map(TestItem::from).collect()
@@ -94,36 +96,36 @@ mod tests {
         let t2: Vec<TestItem> = items(vec![6, 7, 8]);
         let t99: Vec<TestItem> = items(vec![99]);
 
-        chc.add_actions(t0.clone()).unwrap();
-        assert_eq!(chc.head(), Some(2));
-        chc.add_actions(t1.clone()).unwrap();
-        assert_eq!(chc.head(), Some(5));
+        chc.add_actions(t0.clone()).await.unwrap();
+        assert_eq!(chc.head().await.unwrap(), Some(2));
+        chc.add_actions(t1.clone()).await.unwrap();
+        assert_eq!(chc.head().await.unwrap(), Some(5));
         
         // last_hash doesn't match
         assert!(
-            chc.add_actions(t0.clone()).is_err()
+            chc.add_actions(t0.clone()).await.is_err()
         );
         assert!(
-            chc.add_actions(t1.clone()).is_err()
+            chc.add_actions(t1.clone()).await.is_err()
         );
-        assert!(chc.add_actions(t99).is_err());
-        assert_eq!(chc.head(), Some(5));
+        assert!(chc.add_actions(t99).await.is_err());
+        assert_eq!(chc.head().await.unwrap(), Some(5));
         
-        chc.add_actions(t2.clone()).unwrap();
-        assert_eq!(chc.head(), Some(8));
+        chc.add_actions(t2.clone()).await.unwrap();
+        assert_eq!(chc.head().await.unwrap(), Some(8));
 
         assert_eq!(
-            chc.get_actions_since_hash(0),
+            chc.get_actions_since_hash(0).await.unwrap(),
             items([0,1,2,3,4,5,6,7,8])
         );
         assert_eq!(
-            chc.get_actions_since_hash(3),
+            chc.get_actions_since_hash(3).await.unwrap(),
             items([3,4,5,6,7,8])
         );
         assert_eq!(
-            chc.get_actions_since_hash(8),
+            chc.get_actions_since_hash(8).await.unwrap(),
             items([8])
         );
-        assert_eq!(chc.get_actions_since_hash(9), items([]));
+        assert_eq!(chc.get_actions_since_hash(9).await.unwrap(), items([]));
     }
 }

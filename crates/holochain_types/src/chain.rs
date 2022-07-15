@@ -23,9 +23,9 @@ impl AgentActivityExt for AgentActivityResponse {}
 
 /// Abstraction of a source chain item, exposing only the parts that the chain cares about.
 /// The main implementation of this is `SignedActionHashed`
-pub trait ChainItem: Clone + PartialEq + Eq + std::fmt::Debug {
+pub trait ChainItem: Clone + PartialEq + Eq + std::fmt::Debug + Send + Sync {
     /// The hash associated with this item
-    type Hash: Clone + PartialEq + Eq;
+    type Hash: Clone + PartialEq + Eq + Send + Sync;
 
     /// Get the previous hash in the chain
     fn prev_hash(&self) -> Option<&Self::Hash>;
@@ -33,7 +33,6 @@ pub trait ChainItem: Clone + PartialEq + Eq + std::fmt::Debug {
     fn item_hash(&self) -> &Self::Hash;
     /// The sequence in the chain of this item
     fn seq(&self) -> u32;
-
 }
 
 impl ChainItem for ActionHashed {
