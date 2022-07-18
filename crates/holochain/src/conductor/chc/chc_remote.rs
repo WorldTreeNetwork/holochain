@@ -1,10 +1,14 @@
+use std::sync::Arc;
+
 use holo_hash::ActionHash;
+use holochain_p2p::ChcImpl;
 use holochain_types::chc::{ChainHeadCoordinator, ChcResult};
 use holochain_zome_types::prelude::*;
 use reqwest::Url;
 use ::bytes::Bytes;
 use holochain_serialized_bytes::{encode, decode};
 
+/// An HTTP client which can talk to a remote CHC implementation
 pub struct ChcRemote {
     base_url: url::Url
 }
@@ -14,22 +18,35 @@ impl ChainHeadCoordinator for ChcRemote {
     type Item = SignedActionHashed;
 
     async fn head(&self) -> ChcResult<Option<ActionHash>> {
-        Ok(decode(&self.get("/head").await?)?)
+        let response = self.get("/head").await?;
+        Ok(decode(&response)?)
     }
 
     async fn add_actions(&mut self, actions: Vec<Self::Item>) -> ChcResult<()> {
-        let client = reqwest::Client::new();
         let body = encode(&actions)?;
-        
+        let response = self.post("/add_actions", body).await?;
         Ok(())
     }
 
     async fn get_actions_since_hash(&self, hash: ActionHash) -> ChcResult<Vec<Self::Item>> {
-        Ok(decode(&self.post("/get_actions_since_hash", encode(&hash)?).await?)?)
+        let body = encode(&hash)?;
+        let response = self.post("/get_actions_since_hash", body).await?;
+        Ok(decode(&response)?)
     }
 }
 
 impl ChcRemote {
+
+    /// Constructor
+    pub fn new(namespace: &str, cell_id: &CellId) -> Option<ChcImpl> {
+        let is_holo_agent = todo!("check if the agent key is Holo-hosted, otherwise return none");
+        if is_holo_agent {
+            todo!()
+        } else {
+            None
+        }
+    }
+
     fn url(&self, path: &str) -> Url {
         assert!(path.chars().nth(0) == Some('/'));
         Url::parse(&format!("{}{}", self.base_url, path)).expect("invalid URL")

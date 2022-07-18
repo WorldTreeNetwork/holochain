@@ -46,10 +46,9 @@ pub struct ConductorConfig {
     /// Optional config for the network module.
     pub network: Option<holochain_p2p::kitsune_p2p::KitsuneP2pConfig>,
 
-    /// Optional URL for Centralized Chain Coordination service
-    // TODO: may need to specify one per Cell
-    #[cfg(feature = "chc")]
-    pub chc_url: Option<url2::Url2>,
+    /// Optional specification of the Cloudflare namespace to use in Centralized Chain Coordination 
+    /// service URLs
+    pub chc_namespace: Option<String>,
 
     /// Override the default database synchronous strategy.
     ///
@@ -132,6 +131,7 @@ pub mod tests {
                 keystore: KeystoreConfig::DangerTestKeystoreLegacyDeprecated,
                 admin_interfaces: None,
                 db_sync_strategy: DbSyncStrategy::default(),
+                chc_namespace: None,
             }
         );
     }
@@ -226,6 +226,7 @@ pub mod tests {
                 }]),
                 network: Some(network_config),
                 db_sync_strategy: DbSyncStrategy::Fast,
+                chc_namespace: None,
             }
         );
     }

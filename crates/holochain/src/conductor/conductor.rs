@@ -37,6 +37,7 @@ use super::{api::CellConductorApi, state::AppInterfaceConfig};
 use super::{api::CellConductorApiT, interface::AppInterfaceRuntime};
 use super::{api::RealAdminInterfaceApi, manager::TaskManagerClient};
 use crate::conductor::cell::Cell;
+use crate::conductor::chc::ChcRemote;
 use crate::conductor::config::ConductorConfig;
 use crate::conductor::error::ConductorResult;
 use crate::conductor::handle::ConductorHandle;
@@ -636,9 +637,10 @@ impl Conductor {
             let conductor_handle = conductor_handle.clone();
             let managed_task_add_sender = managed_task_add_sender.clone();
             let managed_task_stop_broadcaster = managed_task_stop_broadcaster.clone();
+            let chc_namespace = conductor_handle.get_config().chc_namespace.clone();
             async move {
                 use holochain_p2p::actor::HolochainP2pRefToDna;
-                let chc = todo!("init chc");
+                let chc = chc_namespace.as_ref().and_then(|ns| ChcRemote::new(ns, cell_id));
                 let holochain_p2p_cell = self.holochain_p2p.to_dna(cell_id.dna_hash().clone(), chc);
 
                 let space = self
