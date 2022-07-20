@@ -4,11 +4,11 @@ use holochain_types::prelude::*;
 use crate::core::{validate_chain};
 
 /// A local Rust implementation of a CHC, for testing purposes only.
-pub struct LocalChc<A: ChainItem = SignedActionHashed> {
+pub struct ChcLocal<A: ChainItem = SignedActionHashed> {
     actions: Vec<A>,
 }
 
-impl<A: ChainItem> Default for LocalChc<A> {
+impl<A: ChainItem> Default for ChcLocal<A> {
     fn default() -> Self {
         Self {
             actions: Default::default(),
@@ -16,14 +16,14 @@ impl<A: ChainItem> Default for LocalChc<A> {
     }
 }
 
-impl<A: ChainItem> LocalChc<A> {
+impl<A: ChainItem> ChcLocal<A> {
     fn get_head(actions: &Vec<A>) -> Option<A::Hash> {
         actions.last().map(|a| a.item_hash().clone())
     }
 }
 
 #[async_trait::async_trait]
-impl<A: ChainItem> ChainHeadCoordinator for LocalChc<A> {
+impl<A: ChainItem> ChainHeadCoordinator for ChcLocal<A> {
     type Item = A;
 
     async fn head(&self) -> ChcResult<Option<A::Hash>> {
@@ -45,6 +45,10 @@ impl<A: ChainItem> ChainHeadCoordinator for LocalChc<A> {
 
 #[cfg(test)]
 mod tests {
+    use holochain_conductor_api::conductor::ConductorConfig;
+
+    use crate::sweettest::*;
+
     use super::*;
 
     #[derive(Clone, Debug, PartialEq, Eq)]
@@ -81,7 +85,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_add_actions() {
-        let mut chc = LocalChc::default();
+        let mut chc = ChcLocal::default();
         assert_eq!(chc.head().await.unwrap(), None);
 
         fn items(i: impl IntoIterator<Item = u32>) -> Vec<TestItem> {
@@ -124,5 +128,19 @@ mod tests {
             items([8])
         );
         assert_eq!(chc.get_actions_since_hash(9).await.unwrap(), items([]));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn multi_conductor() {
+        let mut config = ConductorConfig::default();
+        config.chc_namespace = Some("#LOCAL#".to_string());
+        let mut conductors = SweetConductorBatch::from_configs([]).await;
+
+        // let (dna_file, _, _) = SweetDnaFile::unique_from_test_wasms(vec![TestWasm::Anchor])
+        //     .await
+        //     .unwrap();
+
+        // let apps = conductors.setup_app("app", &[dna_file]).await.unwrap();
+        // let ((cell_1,), (cell_2,)) = apps.into_tuples();
     }
 }

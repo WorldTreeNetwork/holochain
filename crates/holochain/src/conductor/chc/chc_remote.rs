@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use holo_hash::ActionHash;
 use holochain_p2p::ChcImpl;
 use holochain_types::chc::{ChainHeadCoordinator, ChcResult};
@@ -38,13 +36,8 @@ impl ChainHeadCoordinator for ChcRemote {
 impl ChcRemote {
 
     /// Constructor
-    pub fn new(namespace: &str, cell_id: &CellId) -> Option<ChcImpl> {
-        let is_holo_agent = todo!("check if the agent key is Holo-hosted, otherwise return none");
-        if is_holo_agent {
-            todo!()
-        } else {
-            None
-        }
+    pub fn new(namespace: &str, cell_id: &CellId) -> Self {
+        todo!()
     }
 
     fn url(&self, path: &str) -> Url {

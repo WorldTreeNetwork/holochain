@@ -37,7 +37,7 @@
 
 use super::api::error::ConductorApiResult;
 use super::api::ZomeCall;
-use super::chc::ChcRemote;
+use super::chc::build_chc;
 use super::conductor::CellStatus;
 use super::config::AdminInterfaceConfig;
 use super::error::ConductorResult;
@@ -1310,7 +1310,8 @@ impl ConductorHandleT for ConductorHandleImpl {
             .ok()
             .map(|c| (c.0, c.1));
         
-        let chc = self.get_config().chc_namespace.as_ref().and_then(|ns| ChcRemote::new(ns, &cell_id));
+        let chc_namespace = self.get_config().chc_namespace.as_ref();
+        let chc = build_chc(chc_namespace, &cell_id);
         let network = self
             .conductor
             .holochain_p2p()
