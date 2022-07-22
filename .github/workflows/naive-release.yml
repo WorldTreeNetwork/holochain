@@ -37,7 +37,7 @@ jobs:
           archive: holochain-$target
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
           # Note that glob pattern is not supported yet.
-          bin: holochain, hc, hc-app, hc-dna, hc-sandbox, hc-web-app, kd, kitsune-bootstrap, kitsune-p2p-tx2-proxy, proxy-tx2-cli
+          bin: holochain,hc,hc-app,hc-dna,hc-sandbox,hc-web-app,kd,kitsune-bootstrap,kitsune-p2p-tx2-proxy,proxy-tx2-cli
         env:
           # (required) GitHub token for uploading assets to GitHub Releases.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
