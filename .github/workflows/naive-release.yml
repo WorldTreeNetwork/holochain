@@ -24,7 +24,7 @@ jobs:
         run: cp target/release/holochain ./build/
       - name: check it out
         run: |
-          tar czvf holochain-${{ github.ref }}.tar.gz ./build/*
+          tar czvf holochain-$(basename ${{ github.ref }}).tar.gz ./build/*
           ls target/release
           ls -l ./build
       - name: Create Release
@@ -44,6 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: holochain-${{ github.ref }}.tar.gz
-          asset_name: holochain-${{ github.ref }}.tar.gz
+          asset_path: holochain-$(basename ${{ github.ref }}).tar.gz
+          asset_name: holochain-$(basename ${{ github.ref }}).tar.gz
           asset_content_type: application/zip
