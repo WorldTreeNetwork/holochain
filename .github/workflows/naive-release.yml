@@ -1,48 +1,92 @@
-name: HoloRelease
+# name: HoloRelease
 
-# on:
-#   push:
-#     branches: [ "gh-release" ]
+# # on:
+# #   push:
+# #     branches: [ "gh-release" ]
 
-env:
-  CARGO_TERM_COLOR: always
+# env:
+#   CARGO_TERM_COLOR: always
   
-permissions:
-  contents: write
+# permissions:
+#   contents: write
 
-on: 
+# on: 
+#   push:
+#     # branches:
+#     #   - gh-release
+#     tags:
+#       - test-v[0-9]+.*
+
+# jobs:
+#   create-release:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
+#       - uses: taiki-e/create-gh-release-action@v1
+#         # with:
+#           # (optional) Path to changelog.
+#           # changelog: CHANGELOG.md
+#         env:
+#           # (required) GitHub token for creating GitHub Releases.
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#   upload-assets:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
+#       # - uses: taiki-e/upload-rust-binary-action@v1
+#       #   with:
+#       #     # archive: holochain-$target
+#       #     # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
+#       #     # Note that glob pattern is not supported yet.
+#       #     bin: holochain,hc
+#       #     # ,hc,hc-app,hc-dna,hc-sandbox,hc-web-app,kd,kitsune-bootstrap,kitsune-p2p-tx2-proxy,proxy-tx2-cli
+#       #   env:
+#       #     # (required) GitHub token for uploading assets to GitHub Releases.
+#       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       - run: mkdir /tmp/build
+#       - run: cd crates/hc && cargo build --release && cp target/release/hc /tmp/build
+
+#       - uses: actions/upload-artifact@v3
+#         with:
+#           name: build
+#           path: /tmp/build
+
+on:
   push:
-    # branches:
-    #   - gh-release
+    # Sequence of patterns matched against refs/tags
     tags:
-      - test-v[0-9]+.*
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Upload Release Asset
 
 jobs:
-  create-release:
+  build:
+    name: Upload Release Asset
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: taiki-e/create-gh-release-action@v1
-        # with:
-          # (optional) Path to changelog.
-          # changelog: CHANGELOG.md
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build project # This would actually build your project, using zip for an example artifact
+      - run: mkdir /tmp/build
+      - run: cd crates/hc && cargo build --release && cp target/release/hc /tmp/build
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
-          # (required) GitHub token for creating GitHub Releases.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  upload-assets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          # archive: holochain-$target
-          # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
-          # Note that glob pattern is not supported yet.
-          bin: holochain,hc
-          # ,hc,hc-app,hc-dna,hc-sandbox,hc-web-app,kd,kitsune-bootstrap,kitsune-p2p-tx2-proxy,proxy-tx2-cli
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
         env:
-          # (required) GitHub token for uploading assets to GitHub Releases.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - run: cd crates/hc && cargo build --release
-
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: /tmp/build/hc
+          asset_name: hc
+          asset_content_type: application/zip
