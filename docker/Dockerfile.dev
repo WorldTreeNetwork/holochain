@@ -1,0 +1,21 @@
+FROM rust:slim AS base
+RUN rustup target add wasm32-unknown-unknown
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  curl \
+  git \
+  libssl-dev \
+  pkg-config
+
+FROM base AS builder
+
+WORKDIR /holochain
+RUN mkdir -p /holochain/build
+COPY crates ./crates
+
+RUN cd crates/holochain && cargo build --release && cp target/release/holochain /holochain/build
+RUN cd crates/hc && cargo build --release && cp target/release/hc /holochain/build
+
+FROM base
+WORKDIR /bin/
+COPY --from=builder /holochain/build/* /bin/

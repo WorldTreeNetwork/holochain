@@ -1,8 +1,8 @@
 name: HoloRelease
 
-on:
-  push:
-    branches: [ "gh-release" ]
+# on:
+#   push:
+#     branches: [ "gh-release" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -10,10 +10,10 @@ env:
 permissions:
   contents: write
 
-# on:
-#   push:
-#     tags:
-#       - test-v[0-9]+.*
+on:
+  push:
+    tags:
+      - test-v[0-9]+.*
 
 jobs:
   # create-release:
